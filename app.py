@@ -39,8 +39,8 @@ jwt = JWTManager(app)
 
 
 @jwt.user_identity_loader
-def user_identity_lookup(user):
-  return user.id
+def user_identity_lookup(identity):
+  return identity.id
 
 
 @jwt.user_lookup_loader
@@ -59,9 +59,9 @@ def expired_token_callback(jwt_header, jwt_payload):
 
 # custom decorator authorize routes for admin or regular user
 def login_required(required_class):
-
+  
   def wrapper(f):
-
+    
     @wraps(f)
     @jwt_required()  # Ensure JWT authentication
     def decorated_function(*args, **kwargs):
@@ -69,22 +69,21 @@ def login_required(required_class):
       if user.__class__ != required_class:  # Check class equality
         return jsonify(message='Invalid user role'), 403
       return f(*args, **kwargs)
-
+    
     return decorated_function
-
+  
   return wrapper
 
-
+#tells flask jwt to encode the user's id in the token
 def login_user(username, password):
   user = User.query.filter_by(username=username).first()
   if user and user.check_password(password):
-    token = create_access_token(identity=user)
+    token = create_access_token(identity=user.id)
     return token
   return None
 
 
 # View Routes
-
 
 @app.route('/', methods=['GET'])
 @app.route('/login', methods=['GET'])
@@ -148,6 +147,7 @@ def signup_action():
 def login_action():
   data = request.form
   token = login_user(data['username'], data['password'])
+  print(token)
   response = None
   user = User.query.filter_by(username=data['username']).first()
   if token:
