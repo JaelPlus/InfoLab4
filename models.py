@@ -184,6 +184,34 @@ class Admin(User):
       return [todo.get_json() for todo in todos]
     else:
       return []
+      
+  def search_todos(self, query, done_filter, page, per_page=10):
+    todos_query = Todo.query
+    
+    # Apply search filter if provided
+    if query:
+      todos_query = todos_query.filter(Todo.text.contains(query))
+    
+    # Apply done status filter if provided
+    if done_filter == 'true':
+      todos_query = todos_query.filter(Todo.done == True)
+    elif done_filter == 'false':
+      todos_query = todos_query.filter(Todo.done == False)
+    
+    # Paginate results
+    return todos_query.paginate(page=page, per_page=per_page, error_out=False)
+    
+  def get_todo_stats(self):
+    total_todos = Todo.query.count()
+    done_todos = Todo.query.filter_by(done=True).count()
+    not_done_todos = total_todos - done_todos
+    
+    return {
+        'total': total_todos,
+        'done': done_todos,
+        'not_done': not_done_todos,
+        'completion_rate': (done_todos / total_todos * 100) if total_todos > 0 else 0
+    }
 
   def __init__(self, staff_id, username, email, password):
     super().__init__(username, email, password)
